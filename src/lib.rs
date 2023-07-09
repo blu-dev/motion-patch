@@ -59,6 +59,27 @@ pub struct FlagsPatch {
     pub unk_2000: Option<bool>,
 }
 
+impl From<mot::Flags> for FlagsPatch {
+    fn from(value: mot::Flags) -> Self {
+        Self {
+            turn: Some(value.turn),
+            loop_: Some(value.r#loop),
+            move_: Some(value.r#move),
+            fix_trans: Some(value.fix_trans),
+            fix_rot: Some(value.fix_rot),
+            fix_scale: Some(value.fix_scale),
+            unk_40: Some(value.unk_40),
+            unk_80: Some(value.unk_80),
+            unk_100: Some(value.unk_100),
+            unk_200: Some(value.unk_200),
+            unk_400: Some(value.unk_400),
+            unk_800: Some(value.unk_800),
+            unk_1000: Some(value.unk_1000),
+            unk_2000: Some(value.unk_2000),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq, Eq)]
 pub struct Animation {
     pub name: Hash40,
@@ -122,6 +143,18 @@ pub struct ExtraPatch {
     pub freeze_during_hitstop: Option<bool>,
 }
 
+impl From<mot::Extra> for ExtraPatch {
+    fn from(value: mot::Extra) -> Self {
+        Self {
+            remove: false,
+            intangible_start_frame: Some(value.xlu_start),
+            intangible_end_frame: Some(value.xlu_end),
+            cancel_frame: Some(value.cancel_frame),
+            freeze_during_hitstop: Some(value.no_stop_intp),
+        }
+    }
+}
+
 impl ExtraPatch {
     pub fn apply(&self, other: &mut mot::Extra) {
         apply!(self, intangible_start_frame, xlu_start, other);
@@ -182,6 +215,30 @@ pub struct MotionPatch {
     pub scripts: Option<Vec<Hash40>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra: Option<ExtraPatch>,
+}
+
+impl From<mot::Motion> for MotionPatch {
+    fn from(value: mot::Motion) -> Self {
+        let anims = value
+            .animations
+            .into_iter()
+            .map(|anim| Animation {
+                name: anim.name,
+                unk: (anim.unk != 0).then_some(anim.unk),
+            })
+            .collect();
+
+        Self {
+            rename: None,
+            remove: false,
+            game_script: Some(value.game_script),
+            flags: Some(value.flags.into()),
+            blend_frames: Some(value.blend_frames),
+            animations: Some(anims),
+            scripts: Some(value.scripts),
+            extra: value.extra.map(Into::into),
+        }
+    }
 }
 
 impl MotionPatch {
@@ -287,6 +344,12 @@ where
                         ..Default::default()
                     },
                 ));
+            }
+        }
+
+        for (name, entry) in dst.list.iter() {
+            if source.list.get(name).is_none() {
+                list.push((*name, MotionPatch::from(entry.clone())));
             }
         }
 
