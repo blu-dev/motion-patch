@@ -266,6 +266,10 @@ where
                 patch.apply(entry);
             }
         }
+
+        let pre_sorted = std::mem::take(&mut list.list);
+        let map = BTreeMap::from_iter(pre_sorted.into_iter());
+        list.list = FromIterator::from_iter(map.into_iter());
     }
 
     fn create(source: &MList, dst: &MList) -> Self {
