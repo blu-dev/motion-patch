@@ -1,7 +1,11 @@
+#[cfg(feature = "cli")]
 use std::{collections::BTreeMap, path::PathBuf};
 
+#[cfg(feature = "cli")]
 use hash40::Hash40;
-use list_diff::{MotionMapExt, MotionPatch};
+
+#[cfg(feature = "cli")]
+use motion_patch::{MotionMapExt, MotionPatch};
 
 #[cfg(not(feature = "cli"))]
 compile_error!("Specify the 'cli' feature to build the differ");
