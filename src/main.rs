@@ -69,10 +69,18 @@ impl Args {
                 };
 
                 let diff = BTreeMap::create(&src, &dst);
-                let yaml = serde_yaml::to_string(&diff).unwrap();
-                if std::fs::write(output, &yaml).is_err() {
+                let string = serde_yaml::to_string(&diff).unwrap();
+                if let Ok(resorted) =
+                    serde_yaml::from_str::<BTreeMap<String, serde_yaml::Value>>(&string)
+                {
+                    let string = serde_yaml::to_string(&resorted).unwrap();
+                    if std::fs::write(output, &string).is_err() {
+                        eprintln!("Failed to write patch file!");
+                        eprintln!("{string}");
+                    }
+                } else if std::fs::write(output, &string).is_err() {
                     eprintln!("Failed to write patch file!");
-                    eprintln!("{yaml}");
+                    eprintln!("{string}");
                 }
             }
             Self::Apply {
@@ -90,7 +98,8 @@ impl Args {
                     return;
                 };
 
-                let Ok(patch) = serde_yaml::from_str::<BTreeMap<Hash40, MotionPatch>>(&patch_str) else {
+                let Ok(patch) = serde_yaml::from_str::<BTreeMap<Hash40, MotionPatch>>(&patch_str)
+                else {
                     eprintln!("The patch file was not valid yaml!");
                     return;
                 };
