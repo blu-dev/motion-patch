@@ -36,6 +36,10 @@ pub enum Args {
         #[clap(long)]
         output: PathBuf,
     },
+    Sort {
+        #[clap(long)]
+        path: PathBuf,
+    },
 }
 
 #[cfg(feature = "cli")]
@@ -108,6 +112,22 @@ impl Args {
 
                 if motion_lib::save(output, &src).is_err() {
                     eprintln!("Failed to write new motion file!");
+                }
+            }
+            Self::Sort { path } => {
+                let Ok(str) = std::fs::read_to_string(&path) else {
+                    eprintln!("File was not valid");
+                    return;
+                };
+
+                if let Ok(resorted) =
+                    serde_yaml::from_str::<BTreeMap<String, serde_yaml::Value>>(&str)
+                {
+                    let string = serde_yaml::to_string(&resorted).unwrap();
+                    if std::fs::write(path, &string).is_err() {
+                        eprintln!("Failed to write patch file!");
+                        eprintln!("{string}");
+                    }
                 }
             }
         }
